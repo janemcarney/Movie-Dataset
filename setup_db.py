@@ -12,8 +12,7 @@ CREATE TABLE IF NOT EXISTS movies (
 
     title TEXT NOT NULL,
 
-    us_canada_gross INTEGER,
-    worldwide_gross INTEGER,
+    revenue INTEGER, 
     production_budget INTEGER,
 
     release_date TEXT,

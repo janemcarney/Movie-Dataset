@@ -23,8 +23,7 @@ class MovieDatabase:
 
             title TEXT NOT NULL,
 
-            us_canada_gross INTEGER,
-            worldwide_gross INTEGER,
+            revenue INTEGER,
             production_budget INTEGER,
 
             release_date TEXT,
@@ -57,8 +56,7 @@ class MovieDatabase:
             imdb_id,
             rotten_tomatoes_url,
             title,
-            us_canada_gross,
-            worldwide_gross,
+            revenue,
             production_budget,
             release_date,
             mpaa_rating,
@@ -74,13 +72,12 @@ class MovieDatabase:
             imdb_rating,
             imdb_vote_count
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
         """, (
             movie.get("imdb_id"),
             movie.get("rotten_tomatoes_url"),
             movie.get("title"),
-            movie.get("us_canada_gross"),
-            movie.get("worldwide_gross"),
+            movie.get("revenue"),
             movie.get("production_budget"),
             movie.get("release_date"),
             movie.get("mpaa_rating"),
