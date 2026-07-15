@@ -5,18 +5,8 @@ Scope:
 - Audience score
 - MPAA rating
 
-Linking across datasets:
-RT does NOT expose an IMDb ID anywhere on the movie page (confirmed —
-no "tt" + digits pattern present at all, even in raw HTML). The "emsId"
-present in several script blocks is RT's own internal UUID, not an IMDb
-ID. Use title + year matching (via search()) as your join key into
-TMDb/IMDb instead. `imdb_id` is kept on RTMovieData as a best-effort
-field (in case some other page includes one) but expect it to be None
-most of the time.
-
-Design notes:
-- Rate-limited and cached to disk so repeated test runs don't hammer the
-  live site.
+Linking across datasets: Use title + year matching (via search()) as join key into
+TMDb/IMDb
 
 Usage:
     scraper = RTScraper(delay=2.0)
@@ -45,8 +35,8 @@ logging.basicConfig(level=logging.INFO)
 @dataclass
 class RTMovieData:
     rt_url: str
-    imdb_id: Optional[str] = None  # best-effort; usually None, see module docstring
-    title: Optional[str] = None  # kept only for sanity-checking the match, not for your dataset
+    imdb_id: Optional[str] = None  # best-effort
+    title: Optional[str] = None  # kept only for checking the match
     critics_score: Optional[int] = None
     critics_sentiment: Optional[str] = None  # "POSITIVE" / "NEGATIVE", RT's own Fresh/Rotten call
     audience_score: Optional[int] = None
@@ -80,8 +70,7 @@ class RTScraper:
         self._last_request_time = 0.0
 
 
-    # Low-level fetch with rate limiting + disk cache
-    # ------------------------------------------------------------------
+    # fetch with rate limiting + disk cache
     def _throttle(self):
         elapsed = time.time() - self._last_request_time
         if elapsed < self.delay:
@@ -113,7 +102,7 @@ class RTScraper:
         1. Case-insensitive exact title match + year match
         2. Year match only
         3. Case-insensitive exact title match only
-        4. First result (last resort)
+        4. First result
         """
         html = self._get(f"{self.SEARCH_URL}?search={requests.utils.quote(title)}")
         soup = BeautifulSoup(html, "html.parser")
@@ -136,24 +125,24 @@ class RTScraper:
         title_lower = title.strip().lower()
         year_str = str(year) if year else None
 
-        # 1. exact title + year
+        # exact title + year
         if year_str:
             for c in candidates:
                 if c["title"].strip().lower() == title_lower and c["release_year"] == year_str:
                     return c["url"]
 
-        # 2. year only
+        # year only
         if year_str:
             for c in candidates:
                 if c["release_year"] == year_str:
                     return c["url"]
 
-        # 3. exact title only
+        # exact title only
         for c in candidates:
             if c["title"].strip().lower() == title_lower:
                 return c["url"]
 
-        # 4. fallback: first result
+        # fallback: first result
         logger.warning(
             f"No exact match for '{title}'"
             + (f" ({year})" if year else "")
@@ -171,7 +160,7 @@ class RTScraper:
         self._parse_ld_json(soup, result)
         self._parse_media_scorecard(soup, result)
 
-        # Best-effort IMDb ID scan across the full page (expect None — see docstring)
+        # Best-effort IMDb ID scan across the full page
         match = re.search(r"tt\d{6,9}", html)
         if match:
             result.imdb_id = match.group(0)
@@ -181,7 +170,7 @@ class RTScraper:
     def _parse_ld_json(self, soup: BeautifulSoup, result: RTMovieData) -> None:
         """
         Parses the schema.org Movie JSON-LD block.
-        Used for: title (sanity check), MPAA rating.
+        Used for: title, MPAA rating
         """
         tag = soup.find("script", type="application/ld+json")
         if not tag or not tag.string:
@@ -199,7 +188,7 @@ class RTScraper:
     def _parse_media_scorecard(self, soup: BeautifulSoup, result: RTMovieData) -> None:
         """
         Parses <script id="media-scorecard-json">.
-        Used for: critics score, audience score, and their sentiment labels.
+        Used for: critics score, audience score, and their sentiment labels
         """
         tag = soup.find("script", id="media-scorecard-json")
         if not tag or not tag.string:
@@ -220,7 +209,7 @@ class RTScraper:
         result.audience_sentiment = audience.get("sentiment")
 
     # Helpers
-
+    
     @staticmethod
     def _to_int(val) -> Optional[int]:
         if val is None:
@@ -230,8 +219,7 @@ class RTScraper:
         except (ValueError, TypeError):
             return None
 
-    # Debug utility: dump both known blocks so you can spot check them
-
+    # Debug utility
     def debug_dump_json(self, rt_url: str, out_path: str = "rt_debug.json") -> None:
         html = self._get(rt_url)
         soup = BeautifulSoup(html, "html.parser")
