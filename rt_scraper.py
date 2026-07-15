@@ -58,7 +58,7 @@ class RTScraper:
         cache_dir: str | Path = ".rt_cache",
         user_agent: str = (
             "Mozilla/5.0 (compatible; personal-research-scraper/1.0; "
-            "+contact: youremail@example.com)"
+            "+contact: janecarney20@gmail.com)"
         ),
     ):
         self.delay = delay
@@ -209,7 +209,7 @@ class RTScraper:
         result.audience_sentiment = audience.get("sentiment")
 
     # Helpers
-    
+
     @staticmethod
     def _to_int(val) -> Optional[int]:
         if val is None:
