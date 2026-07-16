@@ -1,12 +1,12 @@
 """
 
-Scope:
+What is getting scraped:
 - Tomatometer (critics) score
 - Audience score
 - MPAA rating
+- Also critic and audience sentiment (not sure if needed)
 
-Linking across datasets: Use title + year matching (via search()) as join key into
-TMDb/IMDb
+Linking across datasets: Use title + year matching (via search()) as join key into TMDb/IMDb
 
 Usage:
     scraper = RTScraper(delay=2.0)
@@ -38,9 +38,9 @@ class RTMovieData:
     imdb_id: Optional[str] = None  # best-effort
     title: Optional[str] = None  # kept only for checking the match
     critics_score: Optional[int] = None
-    critics_sentiment: Optional[str] = None  # "POSITIVE" / "NEGATIVE", RT's own Fresh/Rotten call
+    critics_sentiment: Optional[str] = None  # calculates the percentage of reviews that are positive (fresh) versus negative (rotten)
     audience_score: Optional[int] = None
-    audience_sentiment: Optional[str] = None
+    audience_sentiment: Optional[str] = None # same as critic sentiment but for audience
     mpaa_rating: Optional[str] = None
 
     def to_dict(self) -> dict:
@@ -58,7 +58,7 @@ class RTScraper:
         cache_dir: str | Path = ".rt_cache",
         user_agent: str = (
             "Mozilla/5.0 (compatible; personal-research-scraper/1.0; "
-            "+contact: janecarney20@gmail.com)"
+
         ),
     ):
         self.delay = delay
@@ -97,8 +97,8 @@ class RTScraper:
     # search
     def search(self, title: str, year: Optional[int] = None) -> Optional[str]:
         """
-        Returns the best-guess RT movie URL for a title, or None if no
-        results were found at all. Matching preference, in order:
+        Returns the best-guess RT movie URL for a title or none if no
+        results were found at all. Matching preference in order:
         1. Case-insensitive exact title match + year match
         2. Year match only
         3. Case-insensitive exact title match only
