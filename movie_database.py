@@ -177,6 +177,49 @@ class MovieDatabase:
         conn.close()
 
         return updated_rows
+    
+    def update_rotten_tomatoes_data(
+        self,
+        tmdb_id,
+        rotten_tomatoes_url=None,
+        audience_rating=None,
+        critics_rating=None,
+        mpaa_rating=None
+    ):
+        conn = self.connect()
+        cursor = conn.cursor()
+
+        cursor.execute("""
+        UPDATE movies
+        SET
+            rotten_tomatoes_url = COALESCE(
+                ?,
+                rotten_tomatoes_url
+            ),
+            rotten_tomatoes_audience_rating = COALESCE(
+                ?,
+                rotten_tomatoes_audience_rating
+            ),
+            rotten_tomatoes_critics_rating = COALESCE(
+                ?,
+                rotten_tomatoes_critics_rating
+            ),
+            mpaa_rating = COALESCE(?, mpaa_rating)
+        WHERE tmdb_id = ?;
+        """, (
+            rotten_tomatoes_url,
+            audience_rating,
+            critics_rating,
+            mpaa_rating,
+            tmdb_id
+        ))
+
+        updated_rows = cursor.rowcount
+
+        conn.commit()
+        conn.close()
+
+        return updated_rows
 
     def has_tmdb_movie(self, tmdb_id):
         conn = self.connect()
