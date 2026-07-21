@@ -1,1 +1,5 @@
 movies.db
+.env
+.venv/
+__pycache__/
+*.pyc
