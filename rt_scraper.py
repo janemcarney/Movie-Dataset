@@ -1,12 +1,19 @@
 """
+rt_scraper.py
 
-What is getting scraped:
+Scope:
 - Tomatometer (critics) score
 - Audience score
 - MPAA rating
-- Also critic and audience sentiment (not sure if needed)
 
-Linking across datasets: Use title + year matching (via search()) as join key into TMDb/IMDb
+Linking across datasets:
+RT does NOT expose an IMDb ID anywhere on the movie page (confirmed —
+no "tt" + digits pattern present at all, even in raw HTML). The "emsId"
+present in several script blocks is RT's own internal UUID, not an IMDb
+ID. Use title + year matching (via search()) as your join key into
+TMDb/IMDb instead. `imdb_id` is kept on RTMovieData as a best-effort
+field (in case some other page includes one) but expect it to be None
+most of the time.
 
 Usage:
     scraper = RTScraper(delay=2.0)
@@ -35,12 +42,12 @@ logging.basicConfig(level=logging.INFO)
 @dataclass
 class RTMovieData:
     rt_url: str
-    imdb_id: Optional[str] = None  # best-effort
-    title: Optional[str] = None  # kept only for checking the match
+    imdb_id: Optional[str] = None  # best-effort; usually None, see module docstring
+    title: Optional[str] = None  # kept only for sanity-checking the match, not for your dataset
     critics_score: Optional[int] = None
-    critics_sentiment: Optional[str] = None  # calculates the percentage of reviews that are positive (fresh) versus negative (rotten)
+    critics_sentiment: Optional[str] = None  # "POSITIVE" / "NEGATIVE", RT's own Fresh/Rotten call
     audience_score: Optional[int] = None
-    audience_sentiment: Optional[str] = None # same as critic sentiment but for audience
+    audience_sentiment: Optional[str] = None
     mpaa_rating: Optional[str] = None
 
     def to_dict(self) -> dict:
@@ -58,7 +65,7 @@ class RTScraper:
         cache_dir: str | Path = ".rt_cache",
         user_agent: str = (
             "Mozilla/5.0 (compatible; personal-research-scraper/1.0; "
-
+            "+contact: youremail@example.com)"
         ),
     ):
         self.delay = delay
@@ -69,8 +76,7 @@ class RTScraper:
         self.cache_dir.mkdir(exist_ok=True)
         self._last_request_time = 0.0
 
-
-    # fetch with rate limiting + disk cache
+    # Low-level fetch with rate limiting + disk cache
     def _throttle(self):
         elapsed = time.time() - self._last_request_time
         if elapsed < self.delay:
@@ -94,15 +100,17 @@ class RTScraper:
         cache_path.write_text(resp.text, encoding="utf-8")
         return resp.text
 
-    # search
+    # Search: find the RT URL for a given title/year
     def search(self, title: str, year: Optional[int] = None) -> Optional[str]:
         """
-        Returns the best-guess RT movie URL for a title or none if no
-        results were found at all. Matching preference in order:
+        Returns the best-guess RT movie URL for a title, or None if no
+        confident match was found. Matching preference, in order:
         1. Case-insensitive exact title match + year match
         2. Year match only
         3. Case-insensitive exact title match only
-        4. First result
+        No first-result fallback — if none of the above hit, this returns
+        None rather than guessing, so ambiguous titles show up as missing
+        data instead of silently wrong data.
         """
         html = self._get(f"{self.SEARCH_URL}?search={requests.utils.quote(title)}")
         soup = BeautifulSoup(html, "html.parser")
@@ -125,33 +133,33 @@ class RTScraper:
         title_lower = title.strip().lower()
         year_str = str(year) if year else None
 
-        # exact title + year
+        # 1. exact title + year
         if year_str:
             for c in candidates:
                 if c["title"].strip().lower() == title_lower and c["release_year"] == year_str:
                     return c["url"]
 
-        # year only
+        # 2. year only
         if year_str:
             for c in candidates:
                 if c["release_year"] == year_str:
                     return c["url"]
 
-        # exact title only
+        # 3. exact title only
         for c in candidates:
             if c["title"].strip().lower() == title_lower:
                 return c["url"]
 
-        # fallback: first result
+        # No confident match — do NOT guess. Log and return None so this
+        # shows up as status "not_found" downstream, not silently wrong data.
         logger.warning(
-            f"No exact match for '{title}'"
+            f"No confident match for '{title}'"
             + (f" ({year})" if year else "")
-            + f" — falling back to first result: '{candidates[0]['title']}'"
+            + f" — {len(candidates)} search result(s) existed but none matched title/year. Skipping."
         )
-        return candidates[0]["url"]
+        return None
 
     # Scrape a single movie page
-
     def scrape_movie(self, rt_url: str) -> RTMovieData:
         html = self._get(rt_url)
         soup = BeautifulSoup(html, "html.parser")
@@ -160,7 +168,7 @@ class RTScraper:
         self._parse_ld_json(soup, result)
         self._parse_media_scorecard(soup, result)
 
-        # Best-effort IMDb ID scan across the full page
+        # Best-effort IMDb ID scan across the full page (expect None — see docstring)
         match = re.search(r"tt\d{6,9}", html)
         if match:
             result.imdb_id = match.group(0)
@@ -170,7 +178,7 @@ class RTScraper:
     def _parse_ld_json(self, soup: BeautifulSoup, result: RTMovieData) -> None:
         """
         Parses the schema.org Movie JSON-LD block.
-        Used for: title, MPAA rating
+        Used for: title (sanity check), MPAA rating.
         """
         tag = soup.find("script", type="application/ld+json")
         if not tag or not tag.string:
@@ -188,7 +196,7 @@ class RTScraper:
     def _parse_media_scorecard(self, soup: BeautifulSoup, result: RTMovieData) -> None:
         """
         Parses <script id="media-scorecard-json">.
-        Used for: critics score, audience score, and their sentiment labels
+        Used for: critics score, audience score, and their sentiment labels.
         """
         tag = soup.find("script", id="media-scorecard-json")
         if not tag or not tag.string:
@@ -219,7 +227,7 @@ class RTScraper:
         except (ValueError, TypeError):
             return None
 
-    # Debug utility
+    # Debug utility: dump both known blocks so you can spot check them
     def debug_dump_json(self, rt_url: str, out_path: str = "rt_debug.json") -> None:
         html = self._get(rt_url)
         soup = BeautifulSoup(html, "html.parser")
