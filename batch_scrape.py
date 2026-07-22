@@ -20,6 +20,7 @@ Usage:
 """
 
 import csv
+import re
 import time
 import random
 import argparse
@@ -33,9 +34,10 @@ logger = logging.getLogger("batch_scrape")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
 # --- Adjust these to match your actual input CSV's column names ---
+# --- Adjust these to match your actual input CSV's column names ---
 TITLE_COLUMN = "title"
-YEAR_COLUMN = None  # set to None if your CSV has no year column
-TMDB_ID_COLUMN = "tmdb_id"  # set to None if your CSV has no tmdb_id column
+YEAR_COLUMN = "release_date"  # full date string (e.g. "2022-03-04") — year is extracted below
+TMDB_ID_COLUMN = "tmdb_id"
 
 OUTPUT_FIELDS = [
     "tmdb_id", "title", "year", "status", "rt_url", "rt_title", "imdb_id",
@@ -43,6 +45,18 @@ OUTPUT_FIELDS = [
     "audience_score", "audience_sentiment",
     "mpaa_rating",
 ]
+
+
+def extract_year(date_str: str) -> str:
+    """
+    Pulls a 4-digit year out of a date string, robust to different formats
+    (e.g. "2022-03-04", "03/04/2022", or a bare "2022"). Returns "" if
+    nothing found.
+    """
+    if not date_str:
+        return ""
+    match = re.search(r"\b(19|20)\d{2}\b", date_str)
+    return match.group(0) if match else ""
 
 
 def load_already_done(output_path: Path) -> set:
@@ -147,7 +161,7 @@ def main():
 
     for i, movie in enumerate(movies, 1):
         title = movie.get(TITLE_COLUMN, "").strip()
-        year = movie.get(YEAR_COLUMN, "").strip() if YEAR_COLUMN else ""
+        year = extract_year(movie.get(YEAR_COLUMN, "").strip()) if YEAR_COLUMN else ""
         tmdb_id = movie.get(TMDB_ID_COLUMN, "").strip() if TMDB_ID_COLUMN else ""
 
         if not title:

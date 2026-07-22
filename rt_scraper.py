@@ -6,6 +6,26 @@ Scope:
 - Audience score
 - MPAA rating
 
+
+Movie page:
+1. <script type="application/ld+json"> — schema.org Movie markup.
+   Used here for: contentRating (MPAA rating). This is the most stable
+   source on the page since it's a public spec RT needs for Google's
+   rich-snippet indexing.
+2. <script id="media-scorecard-json" type="application/json"> — RT's own
+   internal scorecard data. Used here for: criticsScore.score (Tomatometer)
+   and audienceScore.score (Popcornmeter/Audience score). Both are
+   percentage strings like "85". Also carries a "sentiment" field
+   ("POSITIVE"/"NEGATIVE") per score, which is RT's own Fresh/Rotten
+   computation — used instead of guessing a threshold ourselves.
+
+Search page:
+Results render server-side as <search-page-media-row> custom elements,
+one per movie, with score/year data as plain HTML attributes
+(release-year, tomatometer-score, tomatometer-sentiment) and the title +
+URL inside a nested <a data-qa="info-name" href="..."> child. No JSON
+parsing involved at all.
+
 Linking across datasets:
 RT does NOT expose an IMDb ID anywhere on the movie page (confirmed —
 no "tt" + digits pattern present at all, even in raw HTML). The "emsId"
@@ -77,6 +97,7 @@ class RTScraper:
         self._last_request_time = 0.0
 
     # Low-level fetch with rate limiting + disk cache
+
     def _throttle(self):
         elapsed = time.time() - self._last_request_time
         if elapsed < self.delay:
@@ -101,6 +122,7 @@ class RTScraper:
         return resp.text
 
     # Search: find the RT URL for a given title/year
+
     def search(self, title: str, year: Optional[int] = None) -> Optional[str]:
         """
         Returns the best-guess RT movie URL for a title, or None if no
@@ -120,9 +142,12 @@ class RTScraper:
             title_link = row.find("a", attrs={"data-qa": "info-name"})
             if not title_link or not title_link.get("href"):
                 continue
+            href = title_link["href"]
+            if "/m/" not in href:
+                continue  # skip TV shows (/tv/) and any other non-movie result types
             candidates.append({
                 "title": title_link.get_text(strip=True),
-                "url": title_link["href"],
+                "url": href,
                 "release_year": row.get("release-year", ""),
             })
 
@@ -160,6 +185,7 @@ class RTScraper:
         return None
 
     # Scrape a single movie page
+
     def scrape_movie(self, rt_url: str) -> RTMovieData:
         html = self._get(rt_url)
         soup = BeautifulSoup(html, "html.parser")
@@ -217,7 +243,7 @@ class RTScraper:
         result.audience_sentiment = audience.get("sentiment")
 
     # Helpers
-
+ 
     @staticmethod
     def _to_int(val) -> Optional[int]:
         if val is None:
@@ -228,6 +254,7 @@ class RTScraper:
             return None
 
     # Debug utility: dump both known blocks so you can spot check them
+
     def debug_dump_json(self, rt_url: str, out_path: str = "rt_debug.json") -> None:
         html = self._get(rt_url)
         soup = BeautifulSoup(html, "html.parser")
