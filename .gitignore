@@ -3,3 +3,5 @@ movies.db
 .venv/
 __pycache__/
 *.pyc
+.rt_cache/
+.rt_cache/
