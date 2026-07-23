@@ -1,5 +1,8 @@
 movies.db
+movies_backup.db
 .env
 .venv/
 __pycache__/
 *.pyc
+.rt_cache/
+.rt_cache/
