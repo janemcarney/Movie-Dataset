@@ -1,11 +1,9 @@
 """
 load_tmdb_csv.py
 
-Loads movies.csv (your partner's TMDb export) into movies.db using
-save_tmdb_movie(). Safe to run even if the data's already loaded —
+Safe to run even if the data's already loaded —
 save_tmdb_movie() either updates existing rows via COALESCE or does
-INSERT OR IGNORE, so re-running this doesn't create duplicates or
-overwrite anything already filled in.
+INSERT OR IGNORE.
 
 Usage:
     python3 load_tmdb_csv.py --input movies.csv --db movies.db

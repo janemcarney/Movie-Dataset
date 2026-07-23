@@ -1,3 +1,4 @@
+# finding duplicates of movies who have the same RT URL
 import csv
 import sys
 from collections import defaultdict
