@@ -17,6 +17,7 @@ INPUT CSV requirements:
 Usage:
     python3 batch_scrape.py --input movies.csv --output rt_results.csv
     python3 batch_scrape.py --input movies.csv --output rt_results.csv --limit 50   # test run first
+    python3 batch_scrape.py --input movies.csv --output rt_results.csv | tee scrape_log.txt #for second round of scraping
 """
 
 import csv
