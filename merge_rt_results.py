@@ -15,6 +15,7 @@ Usage:
 import csv
 import argparse
 import sqlite3
+import time
 from movie_database import MovieDatabase
 
 
@@ -40,6 +41,7 @@ def main():
     skipped_no_tmdb_id = 0
     skipped_not_ok = 0
     skipped_duplicate_url = 0
+    skipped_locked_db = 0
 
     for row in rows:
         if row.get("status") != "ok":
@@ -54,29 +56,41 @@ def main():
 
         rt_url = row.get("rt_url") or None
 
-        try:
-            rows_affected = db.update_rotten_tomatoes_data(
-                tmdb_id=tmdb_id,
-                rotten_tomatoes_url=rt_url,
-                audience_rating=to_int_or_none(row.get("audience_score")),
-                critics_rating=to_int_or_none(row.get("critics_score")),
-                mpaa_rating=row.get("mpaa_rating") or None,
-            )
+        # Retry loop for database locks
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                rows_affected = db.update_rotten_tomatoes_data(
+                    tmdb_id=tmdb_id,
+                    rotten_tomatoes_url=rt_url,
+                    audience_rating=to_int_or_none(row.get("audience_score")),
+                    critics_rating=to_int_or_none(row.get("critics_score")),
+                    mpaa_rating=row.get("mpaa_rating") or None,
+                )
 
-            if rows_affected > 0:
-                updated += 1
-            else:
-                # tmdb_id from the CSV doesn't exist in movies.db at all —
-                # this means the row was never inserted by the TMDb import step
-                no_match_in_db += 1
-                print(f"  NO DB MATCH: tmdb_id={tmdb_id} ('{row.get('title')}') not found in movies.db")
+                if rows_affected > 0:
+                    updated += 1
+                else:
+                    no_match_in_db += 1
+                    print(f"  NO DB MATCH: tmdb_id={tmdb_id} ('{row.get('title')}') not found in movies.db")
+                break  # Success, exit retry loop
 
-        except sqlite3.IntegrityError:
-            skipped_duplicate_url += 1
-            print(
-                f"  SKIPPED (duplicate RT URL): tmdb_id={tmdb_id} ('{row.get('title')}') "
-                f"tried to use URL already in DB: {rt_url}"
-            )
+            except sqlite3.IntegrityError:
+                skipped_duplicate_url += 1
+                print(
+                    f"  SKIPPED (duplicate RT URL): tmdb_id={tmdb_id} ('{row.get('title')}') "
+                    f"tried to use URL already in DB: {rt_url}"
+                )
+                break  # Not a lock issue; skip this row and move on
+
+            except sqlite3.OperationalError as e:
+                if "locked" in str(e).lower() and attempt < max_retries - 1:
+                    time.sleep(1.0)  # Wait 1 second and retry
+                    continue
+                else:
+                    skipped_locked_db += 1
+                    print(f"  SKIPPED (DB Locked): tmdb_id={tmdb_id} ('{row.get('title')}') could not write due to lock.")
+                    break
 
     print("\n--- Summary ---")
     print(f"Updated in movies.db: {updated}")
@@ -84,6 +98,8 @@ def main():
     print(f"Skipped (status != ok): {skipped_not_ok}")
     print(f"Skipped (missing tmdb_id in CSV): {skipped_no_tmdb_id}")
     print(f"Skipped (duplicate RT URL): {skipped_duplicate_url}")
+    if skipped_locked_db > 0:
+        print(f"Skipped (database locked errors): {skipped_locked_db}")
     print(f"Total rows in CSV: {len(rows)}")
 
 
