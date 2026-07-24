@@ -39,6 +39,7 @@ def main():
     no_match_in_db = 0
     skipped_no_tmdb_id = 0
     skipped_not_ok = 0
+    skipped_duplicate_url = 0
 
     for row in rows:
         if row.get("status") != "ok":
@@ -51,27 +52,38 @@ def main():
             print(f"  SKIPPED (no tmdb_id): '{row.get('title')}' — can't safely join this row")
             continue
 
-        rows_affected = db.update_rotten_tomatoes_data(
-            tmdb_id=tmdb_id,
-            rotten_tomatoes_url=row.get("rt_url") or None,
-            audience_rating=to_int_or_none(row.get("audience_score")),
-            critics_rating=to_int_or_none(row.get("critics_score")),
-            mpaa_rating=row.get("mpaa_rating") or None,
-        )
+        rt_url = row.get("rt_url") or None
 
-        if rows_affected > 0:
-            updated += 1
-        else:
-            # tmdb_id from the CSV doesn't exist in movies.db at all —
-            # this means the row was never inserted by the TMDb import step
-            no_match_in_db += 1
-            print(f"  NO DB MATCH: tmdb_id={tmdb_id} ('{row.get('title')}') not found in movies.db")
+        try:
+            rows_affected = db.update_rotten_tomatoes_data(
+                tmdb_id=tmdb_id,
+                rotten_tomatoes_url=rt_url,
+                audience_rating=to_int_or_none(row.get("audience_score")),
+                critics_rating=to_int_or_none(row.get("critics_score")),
+                mpaa_rating=row.get("mpaa_rating") or None,
+            )
+
+            if rows_affected > 0:
+                updated += 1
+            else:
+                # tmdb_id from the CSV doesn't exist in movies.db at all —
+                # this means the row was never inserted by the TMDb import step
+                no_match_in_db += 1
+                print(f"  NO DB MATCH: tmdb_id={tmdb_id} ('{row.get('title')}') not found in movies.db")
+
+        except sqlite3.IntegrityError:
+            skipped_duplicate_url += 1
+            print(
+                f"  SKIPPED (duplicate RT URL): tmdb_id={tmdb_id} ('{row.get('title')}') "
+                f"tried to use URL already in DB: {rt_url}"
+            )
 
     print("\n--- Summary ---")
     print(f"Updated in movies.db: {updated}")
     print(f"No matching tmdb_id in movies.db: {no_match_in_db}")
     print(f"Skipped (status != ok): {skipped_not_ok}")
     print(f"Skipped (missing tmdb_id in CSV): {skipped_no_tmdb_id}")
+    print(f"Skipped (duplicate RT URL): {skipped_duplicate_url}")
     print(f"Total rows in CSV: {len(rows)}")
 
 
