@@ -1,11 +1,11 @@
 """
 rt_scraper.py
 
+
 Scope:
 - Tomatometer (critics) score
 - Audience score
 - MPAA rating
-
 
 Movie page:
 1. <script type="application/ld+json"> — schema.org Movie markup.
@@ -34,6 +34,10 @@ ID. Use title + year matching (via search()) as your join key into
 TMDb/IMDb instead. `imdb_id` is kept on RTMovieData as a best-effort
 field (in case some other page includes one) but expect it to be None
 most of the time.
+
+Design notes:
+- Rate-limited and cached to disk so repeated test runs don't hammer the
+  live site.
 
 Usage:
     scraper = RTScraper(delay=2.0)
@@ -97,7 +101,6 @@ class RTScraper:
         self._last_request_time = 0.0
 
     # Low-level fetch with rate limiting + disk cache
-
     def _throttle(self):
         elapsed = time.time() - self._last_request_time
         if elapsed < self.delay:
@@ -121,15 +124,21 @@ class RTScraper:
         cache_path.write_text(resp.text, encoding="utf-8")
         return resp.text
 
-    # Search: find the RT URL for a given title/year
+    # Search: find the RT URL for a given title and year
 
+    # Confirmed structure (2026-07-15): search results render server-side
+    # as <search-page-media-row> custom elements, one per movie, with
+    # score/year data as attributes and the title+URL inside a nested
+    # <a data-qa="info-name" href="..."> child. No JSON parsing needed.
     def search(self, title: str, year: Optional[int] = None) -> Optional[str]:
         """
         Returns the best-guess RT movie URL for a title, or None if no
         confident match was found. Matching preference, in order:
         1. Case-insensitive exact title match + year match
-        2. Year match only
-        3. Case-insensitive exact title match only
+        2. Case-insensitive exact title match only (no year available/confirmed)
+        Year-only matching (no title check) was deliberately removed —
+        it caused wrong movies sharing a release year to get matched
+        (e.g. "Brother" (2000) → "O Brother, Where Art Thou?" (2000)).
         No first-result fallback — if none of the above hit, this returns
         None rather than guessing, so ambiguous titles show up as missing
         data instead of silently wrong data.
@@ -164,11 +173,11 @@ class RTScraper:
                 if c["title"].strip().lower() == title_lower and c["release_year"] == year_str:
                     return c["url"]
 
-        # 2. year only
-        if year_str:
-            for c in candidates:
-                if c["release_year"] == year_str:
-                    return c["url"]
+        # (year-only matching removed — it matched on release year alone
+        # with no title check, causing wrong movies with the same year to
+        # get matched, e.g. "Brother" (2000) incorrectly matching
+        # "O Brother, Where Art Thou?" (2000). Year is now only used as
+        # a tiebreaker alongside an exact title match, in tier 1 above.)
 
         # 3. exact title only
         for c in candidates:
@@ -243,7 +252,7 @@ class RTScraper:
         result.audience_sentiment = audience.get("sentiment")
 
     # Helpers
- 
+
     @staticmethod
     def _to_int(val) -> Optional[int]:
         if val is None:
