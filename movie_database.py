@@ -199,6 +199,7 @@ class MovieDatabase:
                 raise
             finally:
                 conn.close()
+                
 
     def has_tmdb_movie(self, tmdb_id):
         conn = self.connect()

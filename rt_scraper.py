@@ -7,6 +7,7 @@ Scope:
 - Audience score
 - MPAA rating
 
+
 Movie page:
 1. <script type="application/ld+json"> — schema.org Movie markup.
    Used here for: contentRating (MPAA rating). This is the most stable
