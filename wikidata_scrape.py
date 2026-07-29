@@ -27,8 +27,8 @@ currencies are recorded in the output CSV for reference but not written
 to movies.db as-is.
 
 Usage:
-    python3 wikidata_enrich.py --db movies.db --output wikidata_results.csv
-    python3 wikidata_enrich.py --db movies.db --output wikidata_results.csv --limit 50   # test first
+    python3 wikidata_scrape.py --db movies.db --output wikidata_results.csv
+    python3 wikidata_scrape.py --db movies.db --output wikidata_results.csv --limit 50   # test first
 """
 
 import csv
