@@ -199,6 +199,46 @@ class MovieDatabase:
                 raise
             finally:
                 conn.close()
+
+    def update_wikidata_data(
+        self,
+        tmdb_id,
+        production_budget=None,
+        revenue=None,
+        producers=None,
+        mpaa_rating=None
+    ):
+        conn = self.connect()
+        cursor = conn.cursor()
+
+        cursor.execute("""
+        UPDATE movies
+        SET
+            production_budget = COALESCE(
+                ?,
+                production_budget
+            ),
+            revenue = COALESCE(?, revenue),
+            producers = COALESCE(?, producers),
+            mpaa_rating = COALESCE(
+                ?,
+                mpaa_rating
+            )
+        WHERE tmdb_id = ?;
+        """, (
+            production_budget,
+            revenue,
+            producers,
+            mpaa_rating,
+            tmdb_id
+        ))
+
+        updated_rows = cursor.rowcount
+
+        conn.commit()
+        conn.close()
+
+        return updated_rows
                 
 
     def has_tmdb_movie(self, tmdb_id):

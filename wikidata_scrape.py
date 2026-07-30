@@ -1,5 +1,5 @@
 """
-wikidata_enrich.py
+wikidata_scrape.py
 
 Fills in missing production_budget, revenue, producers, and mpaa_rating
 by querying Wikidata's SPARQL endpoint, matched by imdb_id — no fuzzy
