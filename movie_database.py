@@ -259,6 +259,61 @@ class MovieDatabase:
 
         conn.close()
         return exists
+    
+    def update_imdb_datasets_data(
+        self,
+        tmdb_id,
+        genre=None,
+        director=None,
+        producers=None,
+        screenwriters=None,
+        imdb_rating=None,
+        imdb_vote_count=None,
+        running_time_minutes=None
+    ):
+        conn = self.connect()
+        cursor = conn.cursor()
+
+        cursor.execute("""
+        UPDATE movies
+        SET
+            genre = COALESCE(?, genre),
+            director = COALESCE(?, director),
+            producers = COALESCE(?, producers),
+            screenwriters = COALESCE(
+                ?,
+                screenwriters
+            ),
+            imdb_rating = COALESCE(
+                ?,
+                imdb_rating
+            ),
+            imdb_vote_count = COALESCE(
+                ?,
+                imdb_vote_count
+            ),
+            running_time_minutes = COALESCE(
+                ?,
+                running_time_minutes
+            )
+        WHERE tmdb_id = ?;
+        """, (
+            genre,
+            director,
+            producers,
+            screenwriters,
+            imdb_rating,
+            imdb_vote_count,
+            running_time_minutes,
+            tmdb_id
+        ))
+
+        updated_rows = cursor.rowcount
+
+        conn.commit()
+        conn.close()
+
+        return updated_rows
 
     def save_tmdb_movie(self, movie):
         conn = self.connect()
