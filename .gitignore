@@ -7,3 +7,4 @@ __pycache__/
 .rt_cache/
 .rt_cache/
 *.tsv.gz
+tmdb_million.csv
