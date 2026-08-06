@@ -11,6 +11,18 @@ BASE_URL = "https://api.themoviedb.org/3"
 TMDB_BEARER_TOKEN = os.getenv("TMDB_BEARER_TOKEN")
 
 
+
+if not TMDB_BEARER_TOKEN:
+    raise RuntimeError(
+        "TMDB_BEARER_TOKEN is not set."
+    )
+
+HEADERS = {
+    "accept": "application/json",
+    "Authorization": f"Bearer {TMDB_BEARER_TOKEN}"
+}
+
+
 def get_headers():
     if not TMDB_BEARER_TOKEN:
         raise ValueError(
@@ -85,6 +97,78 @@ def get_movie_details(tmdb_id):
             )
         }
     )
+
+
+
+session = requests.Session()
+
+
+def find_tmdb_movie(imdb_id, max_attempts=5):
+    """
+    Returns:
+        ("movie", movie_result) if TMDB identifies it as a movie
+        ("tv", None) for a TV series
+        ("tv_episode", None) for a TV episode
+        ("tv_season", None) for a TV season
+        ("not_found", None) if TMDB has no matching result
+        ("request_error", None) after repeated connection failures
+    """
+
+    url = f"https://api.themoviedb.org/3/find/{imdb_id}"
+    params = {"external_source": "imdb_id"}
+
+    for attempt in range(1, max_attempts + 1):
+        try:
+            response = session.get(
+                url,
+                headers=HEADERS,
+                params=params,
+                timeout=(10, 30)
+            )
+
+            if response.status_code == 429:
+                wait_time = int(response.headers.get("Retry-After", 10))
+                time.sleep(wait_time)
+                continue
+
+            response.raise_for_status()
+            data = response.json()
+
+            movie_results = data.get("movie_results", [])
+            tv_results = data.get("tv_results", [])
+            episode_results = data.get("tv_episode_results", [])
+            season_results = data.get("tv_season_results", [])
+
+            # Only accept an unambiguous movie result
+            if movie_results and not (
+                tv_results or episode_results or season_results
+            ):
+                return "movie", movie_results[0]
+
+            if tv_results:
+                return "tv", None
+
+            if episode_results:
+                return "tv_episode", None
+
+            if season_results:
+                return "tv_season", None
+
+            return "not_found", None
+
+        except (
+            requests.exceptions.Timeout,
+            requests.exceptions.ConnectionError
+        ):
+            if attempt == max_attempts:
+                return "request_error", None
+
+            time.sleep(min(60, 2 ** attempt))
+
+        except requests.exceptions.RequestException:
+            return "request_error", None
+
+    return "request_error", None
 
 
 def unique_names(people, accepted_jobs):
@@ -195,16 +279,3 @@ def get_revenue_and_budget(imdb_id):
     }
 
 
-def get_revenue_and_budget(imdb_id):
-    movie = find_movie_by_imdb_id(imdb_id)
-
-    if movie is None:
-        return None
-
-    tmdb_id = movie["id"]
-    details = get_movie_details(tmdb_id)
-
-    return {
-        "revenue": details.get("revenue") or None,
-        "production_budget": details.get("budget") or None
-    }

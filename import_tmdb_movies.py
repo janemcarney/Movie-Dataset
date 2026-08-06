@@ -12,7 +12,7 @@ from tmdb_api import get_full_movie_data
 
 
 # Start small. Change this to None only after testing.
-MAX_NEW_MOVIES = 10000
+MAX_NEW_MOVIES = None
 
 # Be respectful to the API.
 REQUEST_DELAY_SECONDS = 0.3
@@ -20,10 +20,13 @@ REQUEST_DELAY_SECONDS = 0.3
 EXPORT_DIRECTORY = Path("tmdb_exports")
 
 
+
+
 def download_latest_movie_export():
     EXPORT_DIRECTORY.mkdir(exist_ok=True)
 
-    today = datetime.now(timezone.utc).date()
+    today = datetime.now(timezone.utc).date() - timedelta(days=1)
+    # delete the timedelta part after 
 
     # Today's export may not be ready yet, so try recent dates.
     for days_ago in range(7):

@@ -5,4 +5,6 @@ movies_backup.db
 __pycache__/
 *.pyc
 .rt_cache/
-.rt_cache/
+movies.csv
+movie_ids_*.json.gz
+tmdb_exports/*.json.gz

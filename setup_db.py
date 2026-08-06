@@ -18,13 +18,11 @@ CREATE TABLE IF NOT EXISTS movies (
     release_date TEXT,
     mpaa_rating TEXT,
     running_time_minutes INTEGER,
-    distributor TEXT,
 
     genre TEXT,
     director TEXT,
     producers TEXT,
     screenwriters TEXT,
-    awards TEXT,
 
     rotten_tomatoes_audience_rating INTEGER,
     rotten_tomatoes_critics_rating INTEGER,

@@ -18,7 +18,6 @@ for movie in movies:
     print(f"Director: {movie['director']}")
     print(f"Producer(s): {movie['producers']}")
     print(f"Screenwriter(s): {movie['screenwriters']}")
-    print(f"Distributor: {movie['distributor']}")
     print(f"MPAA rating: {movie['mpaa_rating']}")
     print(f"Revenue: {movie['revenue']}")
     print(f"Production budget: {movie['production_budget']}")
