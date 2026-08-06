@@ -1,31 +1,6 @@
 """
 wikidata_scrape.py
 
-Fills in missing production_budget, revenue, producers, and mpaa_rating
-by querying Wikidata's SPARQL endpoint, matched by imdb_id — no fuzzy
-title matching, no scraping risk. Wikidata's API is official, sanctioned
-for automated queries, and explicitly welcomes this kind of use.
-
-Only processes rows from movies.db that are:
-  - missing at least one of the target fields, AND
-  - have a non-null imdb_id to match on
-
-Writes results incrementally to a CSV with the same checkpoint/resume
-pattern as batch_scrape.py — safe to interrupt and re-run.
-
-Wikidata properties used:
-  P2130 - budget (cost)
-  P2142 - box office (revenue)
-  P162  - producer
-  P1657 - MPAA film rating
-
-Note on currency: Wikidata stores budget/box office with a currency
-unit. To avoid silently mixing currencies (a foreign film's budget in
-euros being written into a column meant for USD figures), this script
-ONLY fills production_budget/revenue when the unit is US dollars. Other
-currencies are recorded in the output CSV for reference but not written
-to movies.db as-is.
-
 Usage:
     python3 wikidata_scrape.py --db movies.db --output wikidata_results.csv
     python3 wikidata_scrape.py --db movies.db --output wikidata_results.csv --limit 50   # test first

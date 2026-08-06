@@ -7,11 +7,7 @@ Designed for ~3,000 movies. Safe to interrupt (Ctrl+C) and re-run —
 it skips movies already present in the output file.
 
 INPUT CSV requirements:
-    Must have at least a "title" column. A "year" column is optional
-    but strongly recommended — it's used to disambiguate remakes/reboots
-    during RT search matching. Adjust COLUMN NAMES below to match your
-    actual Vega dataset export (e.g. it may use "Title" / "Release_Date"
-    instead — check your CSV header first).
+- must have title and year is optional
 
 Usage:
     python3 batch_scrape.py --input movies.csv --output rt_results.csv
