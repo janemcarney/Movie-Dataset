@@ -4,20 +4,7 @@ imdb_datasets_enrich.py
 Fills in missing genre, director, producers, screenwriters, imdb_rating,
 imdb_vote_count, and running_time_minutes using IMDb's official
 non-commercial datasets (https://datasets.imdbws.com/), matched by
-imdb_id (tconst) — exact match, no fuzzy matching.
-
-Download these 5 files first, into the same folder as this script
-(leave them gzipped, this script reads them compressed directly):
-    https://datasets.imdbws.com/title.basics.tsv.gz
-    https://datasets.imdbws.com/title.ratings.tsv.gz
-    https://datasets.imdbws.com/title.crew.tsv.gz
-    https://datasets.imdbws.com/title.principals.tsv.gz
-    https://datasets.imdbws.com/name.basics.tsv.gz
-
-These are large files (name.basics and title.principals especially).
-This script streams through each one line-by-line rather than loading
-them fully into memory, filtering down to just your ~11,000 movies as
-it goes.
+imdb_id (tconst)
 
 Usage:
     python3 imdb_datasets_enrich.py --db movies.db --output imdb_datasets_results.csv

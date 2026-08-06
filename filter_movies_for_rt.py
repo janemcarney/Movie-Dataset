@@ -1,16 +1,7 @@
 """
 filter_movies_for_rt.py
 
-Filters a large TMDb-derived movie CSV down to a subset worth attempting
-on Rotten Tomatoes.
-
-This version filters on imdb_id presence — a rougher signal than
-vote_count/popularity (which aren't available in this particular
-export), but usable as-is: a movie having an IMDb entry at all
-correlates loosely with being a real, notable release rather than an
-obscure/unlisted title RT was never going to have anyway. It will let
-through more of the long tail than a vote_count-based filter would, so
-treat the estimated scrape time below as a lower bound, not a promise.
+Check to see if the scrape for RT movies with the tmdb_million.csv was worth it
 
 Usage:
     python3 filter_movies_for_rt.py --input tmdb_million.csv --output movies_for_rt.csv

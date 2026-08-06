@@ -3,12 +3,6 @@ merge_wikidata_results.py
 
 Merges wikidata_results.csv into movies.db, joined by tmdb_id.
 
-Only writes production_budget/revenue when the currency is specifically
-"United States dollar" — other currencies (Reichsmark, Australian
-dollar, etc.) are left out of the numeric columns to avoid silently
-mixing currencies. Producers and mpaa_rating are currency-independent
-and always merged in when present.
-
 Usage:
     python3 merge_wikidata_results.py --input wikidata_results.csv --db movies.db
 """

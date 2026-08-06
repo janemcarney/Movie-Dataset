@@ -1,10 +1,6 @@
 """
 merge_imdb_datasets_results.py
 
-Merges imdb_datasets_results.csv into movies.db, joined by tmdb_id.
-Only fills fields that are currently NULL (via COALESCE in
-update_imdb_datasets_data) — never overwrites existing good data.
-
 Usage:
     python3 merge_imdb_datasets_results.py --input imdb_datasets_results.csv --db movies.db
 """

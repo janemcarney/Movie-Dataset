@@ -1,15 +1,6 @@
 """
 check_fallback_matches.py
 
-Flags rows in your RT scrape output where the returned RT title doesn't
-exactly match the input title — i.e. cases where search() fell back to
-year-only, title-only, or first-result matching instead of an exact hit.
-
-Some flagged rows will be totally correct (e.g. "&" vs "and", or a
-trailing "(2022)" in one title but not the other) — this is meant for
-quick manual review, not as proof of an error. It just narrows ~11,000
-rows down to the ones actually worth eyeballing.
-
 Usage:
     python3 check_fallback_matches.py --input rt_results.csv --output flagged_for_review.csv
 """

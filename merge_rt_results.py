@@ -3,10 +3,7 @@ merge_rt_results.py
 
 Merges rt_results.csv (RT scrape output) into movies.db.
 
-Joins strictly by tmdb_id — never by title — so two movies that happen
-to share a title (e.g. a remake) can never get each other's data mixed
-up. Rows with a missing/blank tmdb_id are skipped and reported, since
-there's nothing safe to join them on.
+Joins strictly by tmdb_id to prevent duplicates
 
 Usage:
     python3 merge_rt_results.py --input rt_results.csv --db movies.db
