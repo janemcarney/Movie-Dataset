@@ -1,10 +1,3 @@
-"""
-merge_imdb_datasets_results.py
-
-Usage:
-    python3 merge_imdb_datasets_results.py --input imdb_datasets_results.csv --db movies.db
-"""
-
 import csv
 import argparse
 from movie_database import MovieDatabase

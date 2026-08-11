@@ -1,15 +1,3 @@
-"""
-imdb_datasets_enrich.py
-
-Fills in missing genre, director, producers, screenwriters, imdb_rating,
-imdb_vote_count, and running_time_minutes using IMDb's official
-non-commercial datasets (https://datasets.imdbws.com/), matched by
-imdb_id (tconst)
-
-Usage:
-    python3 imdb_datasets_enrich.py --db movies.db --output imdb_datasets_results.csv
-"""
-
 import csv
 import gzip
 import argparse

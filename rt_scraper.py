@@ -1,49 +1,8 @@
 """
-rt_scraper.py
-
-
 Scope:
 - Tomatometer (critics) score
 - Audience score
 - MPAA rating
-
-
-Movie page:
-1. <script type="application/ld+json"> — schema.org Movie markup.
-   Used here for: contentRating (MPAA rating). This is the most stable
-   source on the page since it's a public spec RT needs for Google's
-   rich-snippet indexing.
-2. <script id="media-scorecard-json" type="application/json"> — RT's own
-   internal scorecard data. Used here for: criticsScore.score (Tomatometer)
-   and audienceScore.score (Popcornmeter/Audience score). Both are
-   percentage strings like "85". Also carries a "sentiment" field
-   ("POSITIVE"/"NEGATIVE") per score, which is RT's own Fresh/Rotten
-   computation — used instead of guessing a threshold ourselves.
-
-Search page:
-Results render server-side as <search-page-media-row> custom elements,
-one per movie, with score/year data as plain HTML attributes
-(release-year, tomatometer-score, tomatometer-sentiment) and the title +
-URL inside a nested <a data-qa="info-name" href="..."> child. No JSON
-parsing involved at all.
-
-Linking across datasets:
-RT does NOT expose an IMDb ID anywhere on the movie page (confirmed —
-no "tt" + digits pattern present at all, even in raw HTML). The "emsId"
-present in several script blocks is RT's own internal UUID, not an IMDb
-ID. Use title + year matching (via search()) as your join key into
-TMDb/IMDb instead. `imdb_id` is kept on RTMovieData as a best-effort
-field (in case some other page includes one) but expect it to be None
-most of the time.
-
-Design notes:
-- Rate-limited and cached to disk so repeated test runs don't hammer the
-  live site.
-
-Usage:
-    scraper = RTScraper(delay=2.0)
-    url = scraper.search("The Batman", year=2022)
-    data = scraper.scrape_movie(url)
 """
 
 from __future__ import annotations

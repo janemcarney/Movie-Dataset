@@ -1,19 +1,3 @@
-"""
-
-Runs RTScraper over a CSV of movies (e.g. exported from the Vega movies
-dataset) and writes results incrementally to an output CSV.
-
-Designed for ~3,000 movies. Safe to interrupt (Ctrl+C) and re-run —
-it skips movies already present in the output file.
-
-INPUT CSV requirements:
-- must have title and year is optional
-
-Usage:
-    python3 batch_scrape.py --input movies.csv --output rt_results.csv
-    python3 batch_scrape.py --input movies.csv --output rt_results.csv --limit 50   # test run first
-"""
-
 import csv
 import time
 import random
@@ -27,9 +11,8 @@ from rt_scraper import RTScraper
 logger = logging.getLogger("batch_scrape")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
-# --- Adjust these to match your actual input CSV's column names ---
 TITLE_COLUMN = "title"
-YEAR_COLUMN = "year"  # set to None if your CSV has no year column
+YEAR_COLUMN = "year"
 
 OUTPUT_FIELDS = [
     "title", "year", "status", "rt_url", "rt_title", "imdb_id",
@@ -122,9 +105,7 @@ def main():
     already_done = load_already_done(output_path)
     write_header = not output_path.exists()
 
-    # Use a jittered average delay (randomized per-request inside RTScraper
-    # would need a custom subclass; here we approximate by setting a
-    # moderate fixed delay and adding a small extra random pause per movie).
+    # Use a jittered average delay
     scraper = RTScraper(delay=args.delay_min)
 
     total = len(movies)
@@ -148,8 +129,7 @@ def main():
         write_header = False
         processed += 1
 
-        # extra jitter on top of RTScraper's built-in delay, to avoid a
-        # perfectly uniform request cadence
+        # extra jitter on top of RTScraper's built-in delay
         time.sleep(random.uniform(0, args.delay_max - args.delay_min))
 
         if processed % 25 == 0 or i == total:

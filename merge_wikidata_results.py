@@ -1,12 +1,3 @@
-"""
-merge_wikidata_results.py
-
-Merges wikidata_results.csv into movies.db, joined by tmdb_id.
-
-Usage:
-    python3 merge_wikidata_results.py --input wikidata_results.csv --db movies.db
-"""
-
 import csv
 import argparse
 from movie_database import MovieDatabase

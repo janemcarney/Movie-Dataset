@@ -1,13 +1,12 @@
 import pandas as pd
 
 
-# Load both CSV files.
-# Reading tmdb_id as a string helps prevent matching problems.
+# Load both CSV files
 movies = pd.read_csv("movies.csv", dtype={"tmdb_id": "string"})
 rt_results = pd.read_csv("rt_results.csv", dtype={"tmdb_id": "string"})
 
 
-# Create cleaned matching columns without changing the original titles or IDs.
+# Create cleaned matching columns without changing the original titles or IDs
 movies["_title_key"] = (
     movies["title"]
     .astype("string")
@@ -37,7 +36,7 @@ rt_results["_tmdb_id_key"] = (
 )
 
 
-# Keep only Rotten Tomatoes results where the scrape succeeded.
+# Keep only Rotten Tomatoes results where the scrape succeeded
 rt_ok = rt_results[
     rt_results["status"]
     .astype("string")
@@ -47,7 +46,7 @@ rt_ok = rt_results[
 ].copy()
 
 
-# Keep only the matching columns and fields that should be imported.
+# Keep only the matching columns and fields that should be imported
 rt_ok = rt_ok[
     [
         "_title_key",
@@ -60,7 +59,7 @@ rt_ok = rt_ok[
 ]
 
 
-# Rename the imported columns temporarily to avoid name conflicts.
+# Rename the imported columns temporarily to avoid name conflicts
 rt_ok = rt_ok.rename(
     columns={
         "rt_url": "_new_rotten_tomatoes_url",
@@ -71,15 +70,14 @@ rt_ok = rt_ok.rename(
 )
 
 
-# Prevent one movie from being duplicated if rt_results contains
-# multiple successful rows for the same title and TMDB ID.
+# Prevent one movie from being duplicated
 rt_ok = rt_ok.drop_duplicates(
     subset=["_title_key", "_tmdb_id_key"],
     keep="last"
 )
 
 
-# Merge RT information into movies while keeping every movies.csv row.
+# Merge RT information into movies while keeping every movies.csv row
 movies = movies.merge(
     rt_ok,
     on=["_title_key", "_tmdb_id_key"],
@@ -88,7 +86,6 @@ movies = movies.merge(
 )
 
 
-# Make sure the destination columns exist.
 destination_columns = [
     "rotten_tomatoes_url",
     "rotten_tomatoes_critics_rating",
@@ -101,7 +98,7 @@ for column in destination_columns:
         movies[column] = pd.NA
 
 
-# Update these fields whenever an "ok" RT result supplies a value.
+# Update these fields whenever an "ok" RT result supplies a value
 movies["rotten_tomatoes_url"] = (
     movies["_new_rotten_tomatoes_url"]
     .combine_first(movies["rotten_tomatoes_url"])
@@ -118,7 +115,7 @@ movies["rotten_tomatoes_audience_rating"] = (
 )
 
 
-# Only import the RT MPAA rating when movies.csv currently has no rating.
+# Only import the RT MPAA rating when movies.csv currently has no rating
 mpaa_is_blank = (
     movies["mpaa_rating"].isna()
     | movies["mpaa_rating"].astype("string").str.strip().eq("")
@@ -138,11 +135,11 @@ movies.loc[
 ]
 
 
-# Count how many movies received Rotten Tomatoes matches.
+# Count how many movies received Rotten Tomatoes matches
 matched_count = movies["_new_rotten_tomatoes_url"].notna().sum()
 
 
-# Remove temporary merge columns.
+# Remove temporary merge columns
 movies = movies.drop(
     columns=[
         "_title_key",
@@ -154,8 +151,7 @@ movies = movies.drop(
     ]
 )
 
-
-# Save to a new file first.
+# Save to a new file first
 movies.to_csv(
     "movies_updated.csv",
     index=False,

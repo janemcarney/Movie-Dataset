@@ -1,10 +1,3 @@
-"""
-check_fallback_matches.py
-
-Usage:
-    python3 check_fallback_matches.py --input rt_results.csv --output flagged_for_review.csv
-"""
-
 import re
 import csv
 import argparse
