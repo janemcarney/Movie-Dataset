@@ -1,14 +1,3 @@
-"""
-merge_rt_results.py
-
-Merges rt_results.csv (RT scrape output) into movies.db.
-
-Joins strictly by tmdb_id to prevent duplicates
-
-Usage:
-    python3 merge_rt_results.py --input rt_results.csv --db movies.db
-"""
-
 import csv
 import argparse
 import sqlite3
@@ -78,7 +67,7 @@ def main():
                     f"  SKIPPED (duplicate RT URL): tmdb_id={tmdb_id} ('{row.get('title')}') "
                     f"tried to use URL already in DB: {rt_url}"
                 )
-                break  # Not a lock issue; skip this row and move on
+                break  # Not a lock issue, skip this row and move on
 
             except sqlite3.OperationalError as e:
                 if "locked" in str(e).lower() and attempt < max_retries - 1:
